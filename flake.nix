@@ -35,7 +35,7 @@
         cljpkgs = inputs'.clj-nix.packages;
       in {
         packages = {
-          default = self'.packages."${package}-clj";
+          default = self'.packages."${package}-graal";
 
           "${package}-clj" = cljpkgs.mkCljBin {
             projectSrc = ./.;
