@@ -67,6 +67,8 @@
           projectRootFile = "flake.nix";
           programs.alejandra.enable = true;
         };
+
+        checks = self'.packages;
       };
     };
 }
