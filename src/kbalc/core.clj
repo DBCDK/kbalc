@@ -17,7 +17,7 @@
   (:import
    [org.apache.kafka.common
     TopicPartition
-    KafkaFuture
+    TopicPartitionReplica
     ]))
 
 (set! *warn-on-reflection* true)
@@ -46,7 +46,7 @@
 
 (defn create-admin [server port]
   (let [ ^java.util.Map cfg {"bootstrap.servers" (str server ":" port)} ]
-  (Admin/create cfg)))
+    (Admin/create cfg)))
 
 (defn get-log-dirs []
   (map
@@ -66,29 +66,58 @@
         :partition-count partition-count
         :replicas replicas
         :size-bytes (reduce + (map (fn [r] (r :size-bytes)) replicas))}))
-   (let [^DescribeLogDirsResult dldr (.. ^Admin admin (describeLogDirs [broker]))]
-    (get (.. dldr (allDescriptions) (get)) broker))))
-
-(defn do-balance []
-  (let [log-dirs (get-log-dirs)]
-    (println "Brrrrrr")))
+   (get (.. ^Admin admin (describeLogDirs [broker]) (allDescriptions) (get)) broker)))
 
 (defn display-balance []
   (let [log-dirs (get-log-dirs)]
-    (println (str "Log dirs on broker: '" broker "': "))
+    (print (str "Log dirs on broker: '" broker "': "))
     (pp/print-table [:dir :partition-count :size-bytes] (sort-by :dir log-dirs))))
+
+(defn do-balance [threshold]
+  "Naively sort logdirs by counting partitions and move partitions from the last to the first"
+  (loop [log-dirs (sort-by :partition-count (get-log-dirs))]
+    (let [log-S (first log-dirs)
+          log-L (last log-dirs)
+          ;; no comparing here yet, could use size or other smartness
+          part-L (first (log-L :replicas))
+          tpr (TopicPartitionReplica. (part-L :topic) (part-L :partition) broker)
+          reassignments { tpr (log-S :dir) }
+          diff (abs (- (log-L :partition-count) (log-S :partition-count)))]
+
+      (println "")
+      (display-balance)
+      (println "")
+
+      (if (<= diff threshold)
+        (println
+         (str "Difference in partition-count between smallest and largest logDir is "
+              diff
+              " which is less than the threshold of "
+              threshold
+              "."
+              " Stopping kbalc."))
+        (do
+          (println
+           (str "Moving "
+                (part-L :topic) "-" (part-L :partition)
+                " from " (log-L :dir)
+                " to " (log-S :dir)
+                ))
+          (.. ^Admin admin (alterReplicaLogDirs reassignments) (all) (get))
+          (recur (sort-by :partition-count (get-log-dirs))))))))
 
 (defn -main [& args]
   (let [opts ((parse-opts args cli-options) :options)]
     (def broker (opts :broker))
     (def admin (create-admin (opts :server) (opts :port)))
-    (display-balance)
-    (println "Will move one partition at a time from a most-populated logDir to a least-populated logDir")
     (if (opts :yes)
-      (do-balance)
-      ((print "Do you want to balance? Type YES: ")
+      (do-balance 1)
+      ((display-balance)
+       (println "Will move one partition at a time from a most-populated logDir to a least-populated logDir")
+       (print "Do you want to balance? Type YES: ")
        (flush)
        (let [response (read-line)]
-         (if (= response "YES") ((println "Starting balance...")
-                                 (do-balance))
-             (println "Not \"YES\", exiting")))))))
+         (if (not= response "YES")
+           (println "Not \"YES\", exiting")
+           ((println "Starting balance...")
+            (do-balance 1))))))))
