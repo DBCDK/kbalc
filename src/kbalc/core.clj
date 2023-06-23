@@ -59,7 +59,8 @@
                     (fn [[^TopicPartition tp ^ReplicaInfo ri]]
                       {:topic (. tp (topic))
                        :partition (. tp (partition))
-                       :size-bytes (. ri (size))})
+                       :size-bytes (. ri (size))
+                       :is-future (. ri isFuture)})
                     replica-infos)]
        {:replica-infos replica-infos
         :dir dir
@@ -104,6 +105,12 @@
                 " to " (log-S :dir)
                 ))
           (.. ^Admin admin (alterReplicaLogDirs reassignments) (all) (get))
+          (loop [log-dirs' (get-log-dirs)]
+            (let [future-replicas (mapcat (fn [ld] (filter (fn [r] (r :is-future)) (ld :replicas))) log-dirs')]
+              (when (not-empty future-replicas)
+                (println future-replicas)
+                (Thread/sleep 1000)
+                (recur (get-log-dirs)))))
           (recur (sort-by :partition-count (get-log-dirs))))))))
 
 (defn -main [& args]
