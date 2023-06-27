@@ -38,9 +38,8 @@
     "BrokerID of broker to balance"
     :parse-fn #(Integer/parseInt %)]])
 
-;; TODO: Possible to make these write-once (a la rust Once)? I don't want to
-;; pass them through every function as args. For now, promise not to set them
-;; again outside of main.
+;; globals, write-once only in main
+;; I don't want to pass them through every function as args.
 (def broker)
 (def admin)
 
