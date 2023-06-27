@@ -1,0 +1,5 @@
+{:deps {org.clojure/clojure {:mvn/version "1.11.1"}
+        org.clojure/tools.cli {:mvn/version "1.0.219"}
+        org.slf4j/slf4j-simple {:mvn/version "2.0.7"}
+        org.apache.kafka/kafka-clients {:mvn/version "3.5.0"} }
+ :paths ["src"]}
