@@ -120,7 +120,7 @@
     (if (opts :yes)
       (do-balance 1)
       ((display-balance)
-       (println "Will move one partition at a time from a most-populated logDir to a least-populated logDir")
+       (println "Will move one partition at a time from a most-populated (by count) logDir to a least-populated logDir (by count)")
        (print "Do you want to balance? Type YES: ")
        (flush)
        (let [response (read-line)]
