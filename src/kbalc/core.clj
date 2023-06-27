@@ -119,7 +119,8 @@
     (def admin (create-admin (opts :server) (opts :port)))
     (if (opts :yes)
       (do-balance 1)
-      ((display-balance)
+      (do
+       (display-balance)
        (println "Will move one partition at a time from a most-populated (by count) logDir to a least-populated logDir (by count)")
        (print "Do you want to balance? Type YES: ")
        (flush)
