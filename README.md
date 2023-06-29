@@ -8,7 +8,7 @@ It moves replicas on a specified broker, one at a time, from a most-populated lo
 ## How do?
 
 ```
-nix run . --broker BROKER_ID --server SOME_KAFKA_HOST
+nix run . -- --broker BROKER_ID --server SOME_KAFKA_HOST
 ```
 
 ## Why do?
