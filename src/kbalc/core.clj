@@ -41,7 +41,7 @@
 ;; globals, write-once only in main
 ;; I don't want to pass them through every function as args.
 (def broker)
-(def admin)
+(def ^Admin admin)
 
 (defn create-admin [server port]
   (let [ ^java.util.Map cfg {"bootstrap.servers" (str server ":" port)} ]
@@ -66,7 +66,7 @@
         :partition-count partition-count
         :replicas replicas
         :size-bytes (reduce + (map (fn [r] (r :size-bytes)) replicas))}))
-   (get (.. ^Admin admin (describeLogDirs [broker]) (allDescriptions) (get)) broker)))
+   (get (.. admin (describeLogDirs [broker]) (allDescriptions) (get)) broker)))
 
 (defn display-balance []
   (let [log-dirs (get-log-dirs)]
@@ -103,7 +103,7 @@
                 " from " (log-L :dir)
                 " to " (log-S :dir)
                 ))
-          (.. ^Admin admin (alterReplicaLogDirs reassignments) (all) (get))
+          (.. admin (alterReplicaLogDirs reassignments) (all) (get))
           (loop [log-dirs' (get-log-dirs)]
             (let [future-replicas (mapcat (fn [ld] (filter (fn [r] (r :is-future)) (ld :replicas))) log-dirs')]
               (when (not-empty future-replicas)
